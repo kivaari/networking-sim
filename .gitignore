@@ -1,0 +1,5 @@
+.idea/
+.vscode/
+pytest_cache
+*.cpython-314.pyc
+*.cpython-314-pytest-9.1.1.pyc
