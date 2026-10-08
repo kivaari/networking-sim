@@ -14,6 +14,25 @@ class UserRequest(BaseModel):
     content_type: Optional[str] = None
     body: Optional[Any] = None
 
+class RawHTTPResponse(BaseModel):
+    protocol_version: str = Field(..., pattern="^(HTTP/1.1|HTTP/2)")
+    status: str
+    content_type: Optional[str] = None
+    content_length: Optional[str] = None
+    connection: Optional[str] = None
+    server: Optional[str] = None
+    date: Optional[str] = None
+    body: Optional[Any] = None
+
+DNS_TABLE = {"example.com": "162.21.12.12", "api.example.com": "192.32.34.45", "api.test.com": "192.23.54.76", "localhost": "192.0.0.1"}
+CACHE = {}
+
+def resolve(host: str) -> str: #DNS Resolver like thing
+    host = host.lower()
+    if host in CACHE: return CACHE[host]
+    if host not in DNS_TABLE: raise ValueError(f"NXDOMAIN: {host}")
+    CACHE[host] = DNS_TABLE[host]
+    return CACHE[host]
 
 def parse_input(input_str: str) -> UserRequest:
     input_str = input_str.strip()
@@ -27,11 +46,10 @@ def parse_input(input_str: str) -> UserRequest:
     url = match.group(2)
     body_raw = match.group(3).strip() if match.group(3) else None
 
-    if  not url.startswith(('http://', 'https://')):
-        url = 'http://' + url
+    if not url.startswith(('http://', 'https://')): url = 'http://' + url
 
     parsed_url = urlparse(url)
-    host = parsed_url.netloc
+    host = parsed_url.hostname.lower() if parsed_url.hostname else ""
     if not host: raise ValueError(f"Host is None")
 
     path = parsed_url.path if parsed_url.path else '/'
@@ -87,18 +105,30 @@ def generate_raw_http_request(req: UserRequest) -> bytes:
 
     return headers_str.encode('utf-8') + body_bytes
 
-
 # HTTP response generation
-def recieve_byte_response():
-    pass
+def received_bytes_parse(received_bytes: bytes) -> RawHTTPResponse:
+    header_part, body_part = received_bytes.split(b'\r\n\r\n', 1)
+    lines = header_part.split(b'\r\n')
+    headers = {}
+    for line in lines[1:]:
+        key, value = line.split(b':', 1)
+        headers[key.strip().lower().decode('utf-8')] = value.strip().decode('utf-8')
 
+    ctype = (headers.get('content-type') or '').split(';', 1)[0].strip()
+    if ctype == 'application/json':
+        body = json.loads(body_part)
+    else:
+        body = body_part.decode('utf-8')
 
-# Reverse parsing
-def parse_byte_response():
-    pass
+    protocol, s = lines[0].strip().decode('utf-8').split(' ', 1)
 
-
-def generate_parsed_byte_response():
-    pass
-
-
+    return RawHTTPResponse(
+        protocol_version=protocol,
+        status=s,
+        content_type=headers.get('content-type'),
+        content_length=headers.get('content-length'),
+        connection=headers.get('connection'),
+        server=headers.get('server'),
+        date=headers.get('date'),
+        body=body
+    )
