@@ -1,28 +1,7 @@
 import json
 import re
 from urllib.parse import urlparse
-from typing import Any, Optional
-from pydantic import BaseModel, Field
-
-class UserRequest(BaseModel):
-    method: str = Field(..., pattern="^(GET|POST|PUT|PATCH|DELETE)$")
-    path: str
-    protocol_version: str = "HTTP/1.1"
-    host: str
-    user_agent: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-    accept: str = "*/*"
-    content_type: Optional[str] = None
-    body: Optional[Any] = None
-
-class RawHTTPResponse(BaseModel):
-    protocol_version: str = Field(..., pattern="^(HTTP/1.1|HTTP/2)")
-    status: str
-    content_type: Optional[str] = None
-    content_length: Optional[str] = None
-    connection: Optional[str] = None
-    server: Optional[str] = None
-    date: Optional[str] = None
-    body: Optional[Any] = None
+from .models import UserRequest, RawHTTPResponse
 
 DNS_TABLE = {"example.com": "162.21.12.12", "api.example.com": "192.32.34.45", "api.test.com": "192.23.54.76", "localhost": "192.0.0.1"}
 CACHE = {}
