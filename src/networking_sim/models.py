@@ -34,3 +34,4 @@ class Segment(BaseModel):
     ack: int
     flags: set[str]
     payload: Optional[bytes] = None
+    checksum: int
