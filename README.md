@@ -11,23 +11,23 @@
 ### L6 - Представления (l6_presentation.py)
 
 Кодировка текста: str <-> utf-8 bytes<br>
-- [ ] Шифрование/дешифровка заглушка (например XOR или TLS-заглушка с пометкой "здесь был бы TLS")<br>
-- [ ] Сжатие/разжатие (gzip или заглушка)<br>
+- [x] Шифрование/дешифровка заглушка<br>
+- [ ] Сжатие/разжатие (gzip)<br>
 - [ ] Сериализация JSON<br>
 - [ ] *DONE*
 
 ### L5 - Сеансовый (l5_session.py)
 
-- [ ] Установить сессию: session_id, client/server, состояние ESTABLISHED/CLOSED<br>
+- [x] Установить сессию: session_id, client/server, состояние ESTABLISHED/CLOSED<br>
 - [ ] Привязка нескольких запросов к одной сессии (cookies/token)<br>
-- [ ] Корректное закрытие сессии<br>
+- [x] Корректное закрытие сессии<br>
 - [ ] *DONE*
 
 ### L4 - Транспортный (l4_tcp.py)
 
-- [ ] TCP-сегмент: src_port, dst_port, seq, ack, flags (SYN/ACK/FIN/PSH), window, checksum<br>
-- [ ] 3-way handshake: SYN -> SYN-ACK -> ACK лог<br>
-- [ ] Разбивка на сегменты и сборка по seq (возьми строку 3000 байт, порежь по 1460)<br>
+- [x] TCP-сегмент: src_port, dst_port, seq, ack, flags (SYN/ACK/FIN/PSH), window, checksum<br>
+- [x] 3-way handshake: SYN -> SYN-ACK -> ACK лог<br>
+- [x] Разбивка на сегменты и сборка по seq<br>
 - [ ] UDP-вариант: только порты + длина, без handshake<br>
 - [ ] *DONE*
 
