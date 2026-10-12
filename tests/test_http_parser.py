@@ -48,7 +48,7 @@ def test_parse_input_success(
     assert req.path == expected_path
     assert isinstance(req.body, expected_body_type)
     assert req.content_type == expected_content_type
-    assert req.protocol_version == "HTTP/1.1" # Значение по умолчанию
+    assert req.protocol_version == "HTTP/1.1"
 
 
 @pytest.mark.parametrize("invalid_input", [
