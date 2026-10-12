@@ -23,6 +23,6 @@ class RawHTTPResponse(BaseModel):
 
 class Session(BaseModel):
     id: str
-    host: str = None
-    host_ip: str = None
+    host: str = Optional[str]
+    host_ip: str = Optional[str]
     state: str = "ESTABLISHED"

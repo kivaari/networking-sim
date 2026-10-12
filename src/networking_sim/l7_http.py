@@ -1,7 +1,6 @@
 import json
 import re
 from urllib.parse import urlparse
-from .resolve import resolve
 from .models import UserRequest, RawHTTPResponse
 
 def parse_input(input_str: str) -> UserRequest:
