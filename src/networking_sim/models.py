@@ -23,6 +23,14 @@ class RawHTTPResponse(BaseModel):
 
 class Session(BaseModel):
     id: str
-    host: str = Optional[str]
-    host_ip: str = Optional[str]
+    host: Optional[str] = None
+    host_ip: Optional[str] = None
     state: str = "ESTABLISHED"
+
+class Segment(BaseModel):
+    src_port: int
+    dst_port: int
+    seq: int
+    ack: int
+    flags: set[str]
+    payload: Optional[bytes] = None
