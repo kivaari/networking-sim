@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 class UserRequest(BaseModel):
     method: str = Field(..., pattern="^(GET|POST|PUT|PATCH|DELETE)$")
@@ -28,6 +28,7 @@ class Session(BaseModel):
     state: str = "ESTABLISHED"
 
 class Segment(BaseModel):
+    model_config = ConfigDict(ser_json_bytes='base64', val_json_bytes='base64')
     src_port: int
     dst_port: int
     seq: int
@@ -35,3 +36,20 @@ class Segment(BaseModel):
     flags: set[str]
     payload: Optional[bytes] = None
     checksum: int
+
+class Packet(BaseModel):
+    model_config = ConfigDict(ser_json_bytes='base64', val_json_bytes='base64')
+    src_ip: str
+    dst_ip: str
+    ttl: int = 64
+    protocol: str = "TCP"
+    payload: bytes
+    header_checksum: int
+
+class Frame(BaseModel):
+    model_config = ConfigDict(ser_json_bytes='base64', val_json_bytes='base64')
+    src_mac: str
+    dst_mac: str
+    ethertype: int = 0x0800
+    payload: bytes
+    fcs: int
