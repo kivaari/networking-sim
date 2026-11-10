@@ -1,4 +1,9 @@
 import json
+import gzip
+import json
+
+_COMPRESS_MARK = b"L6Z\x01"
+_MIN_COMPRESS_SIZE = 128 
 
 def encode(payload: str | dict | list | bytes | None) -> tuple[bytes, str]:
     if payload is None: return b"", "text/plain; charset=utf-8"
@@ -13,8 +18,15 @@ def decode(data: bytes, ctype: str) -> str | dict:
     if base == "application/octet-stream": return data
     return data.decode("utf-8")
 
-def compress(data):
-    return data
+def compress(data: bytes, min_size: int = _MIN_COMPRESS_SIZE) -> bytes:
+    if not data or len(data) < min_size:
+        return data
+    packed = gzip.compress(data, mtime=0)
+    if len(packed) + len(_COMPRESS_MARK) >= len(data):
+        return data
+    return _COMPRESS_MARK + packed
 
-def decompress(data):
-    return data
+def decompress(data: bytes) -> bytes:
+    if not data.startswith(_COMPRESS_MARK):
+        return data
+    return gzip.decompress(data[len(_COMPRESS_MARK):])

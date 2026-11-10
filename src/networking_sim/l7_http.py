@@ -3,50 +3,51 @@ import re
 from urllib.parse import urlparse
 from .models import UserRequest, RawHTTPResponse
 
+
 def parse_input(input_str: str) -> UserRequest:
     input_str = input_str.strip()
 
     pattern = r'^(GET|POST|PUT|PATCH|DELETE)\s+([^\s]+)(?:\s+(.*))?$'
     match = re.match(pattern, input_str, re.IGNORECASE)
     if not match:
-        raise ValueError(f"Invalid Input: '{input_str}'")
+        raise ValueError(f"Invalid input: '{input_str}'")
 
     method = match.group(1).upper()
     url = match.group(2)
     body_raw = match.group(3).strip() if match.group(3) else None
+    
+    if body_raw and body_raw.upper() in ("HTTP/1.1", "HTTP/1.0", "HTTP/2"):
+        body_raw = None
 
-    if not url.startswith(('http://', 'https://')): url = 'http://' + url
+    if not url.startswith(('http://', 'https://')):
+        url = 'http://' + url
 
-    parsed_url = urlparse(url)
-    host = parsed_url.hostname.lower() if parsed_url.hostname else ""
-    if not host: raise ValueError(f"Host is None")
+    parsed = urlparse(url)
+    host = parsed.hostname.lower() if parsed.hostname else ""
+    if not host:
+        raise ValueError("Host is None")
 
-    path = parsed_url.path if parsed_url.path else '/'
-    if parsed_url.query:
-        path += '?' + parsed_url.query 
+    path = parsed.path or '/'
+    if parsed.query:
+        path += '?' + parsed.query
 
-    content_type = None
-    body_parsed = None
-
+    content_type, body = None, None
     if body_raw:
         try:
-            body_parsed = json.loads(body_raw)
+            body = json.loads(body_raw)
             content_type = "application/json"
         except json.JSONDecodeError:
-            body_parsed = body_raw
+            body = body_raw
             content_type = "text/plain; charset=utf-8"
 
     return UserRequest(
         method=method,
         path=path,
         host=host,
-        body=body_parsed,
-        content_type=content_type
+        body=body,
+        content_type=content_type,
     )
 
-# Request generation
-def generate_request_json(req: UserRequest) -> str:
-    return req.model_dump_json(indent=2)
 
 def generate_raw_http_request(req: UserRequest) -> bytes:
     lines = [
@@ -58,46 +59,45 @@ def generate_raw_http_request(req: UserRequest) -> bytes:
 
     body_bytes = b""
     if req.body is not None:
-        ctype = req.content_type
-        if ctype is None:
-            ctype = "application/json" if isinstance(req.body, (dict, list)) else "text/plain; charset=utf-8"
-        if ctype == "application/json":
-            body_str = json.dumps(req.body, separators=(',', ':'))
+        ctype = req.content_type or (
+            "application/json" if isinstance(req.body, (dict, list))
+            else "text/plain; charset=utf-8"
+        )
+        if ctype.startswith("application/json"):
+            body_bytes = json.dumps(req.body, separators=(',', ':')).encode('utf-8')
         else:
-            body_str = str(req.body)
+            body_bytes = str(req.body).encode('utf-8')
 
-        body_bytes = body_str.encode('utf-8')
         lines.append(f"Content-Type: {ctype}")
         lines.append(f"Content-Length: {len(body_bytes)}")
 
-    headers_str = "\r\n".join(lines) + "\r\n\r\n"
+    return ("\r\n".join(lines) + "\r\n\r\n").encode('utf-8') + body_bytes
 
-    return headers_str.encode('utf-8') + body_bytes
 
-# HTTP response generation
 def received_bytes_parse(received_bytes: bytes) -> RawHTTPResponse:
     header_part, body_part = received_bytes.split(b'\r\n\r\n', 1)
     lines = header_part.split(b'\r\n')
-    headers = {}
+
+    headers: dict[str, str] = {}
     for line in lines[1:]:
         key, value = line.split(b':', 1)
         headers[key.strip().lower().decode('utf-8')] = value.strip().decode('utf-8')
 
-    ctype = (headers.get('content-type') or '').split(';', 1)[0].strip()
-    if ctype == 'application/json':
+    base_ctype = (headers.get('content-type') or '').split(';', 1)[0].strip()
+    if base_ctype == 'application/json':
         body = json.loads(body_part)
     else:
         body = body_part.decode('utf-8')
 
-    protocol, s = lines[0].strip().decode('utf-8').split(' ', 1)
+    protocol, status = lines[0].strip().decode('utf-8').split(' ', 1)
 
     return RawHTTPResponse(
         protocol_version=protocol,
-        status=s,
+        status=status,
         content_type=headers.get('content-type'),
         content_length=headers.get('content-length'),
         connection=headers.get('connection'),
         server=headers.get('server'),
         date=headers.get('date'),
-        body=body
+        body=body,
     )
